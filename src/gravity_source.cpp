@@ -11,21 +11,24 @@ RealGravitySource::RealGravitySource(QObject *parent)
 {}
 
 // 画面の回転に応じてセンサー軸を画面座標系に変換する
-//   Android センサー: X=右, Y=上(画面Y反転), Z=手前
-//   画面座標:         X=右, Y=下
-//   → 基本は Y を反転、さらに画面回転に合わせて X/Y を入れ替え
+//   Android センサー座標 (static, 機体固定):
+//     X: 右=正, Y: 上=正, Z: 画面手前=正
+//   画面座標 (portrait):
+//     X: 右=正, Y: 下=正
+//   → センサーは X が反転 (右に傾けると sensor.x が負になる)
+//   → Y は変換不要 (直立時 sensor.y ≈ +9.8, 画面下方向に正として動く)
 QVector2D RealGravitySource::mapAxes(float sx, float sy) const {
-    if (!m_screen) return {sx, -sy};
+    if (!m_screen) return {-sx, sy};
 
     switch (m_screen->orientation()) {
     case Qt::LandscapeOrientation:         // 90° 時計回り
-        return { sy,  sx};
-    case Qt::InvertedPortraitOrientation:  // 180°
-        return {-sx,  sy};
-    case Qt::InvertedLandscapeOrientation: // 270°
         return {-sy, -sx};
-    default:                               // Portrait (0°, 通常)
+    case Qt::InvertedPortraitOrientation:  // 180°
         return { sx, -sy};
+    case Qt::InvertedLandscapeOrientation: // 270°
+        return { sy,  sx};
+    default:                               // Portrait (0°, 通常)
+        return {-sx,  sy};
     }
 }
 

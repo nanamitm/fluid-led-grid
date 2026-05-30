@@ -9,7 +9,13 @@
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
-    WakeLock::acquire();
+    // スリープ抑止: ウィンドウが生成されてから実行する必要があるため
+    // applicationStateChanged で Active になったタイミングで適用
+    QObject::connect(&app, &QGuiApplication::applicationStateChanged,
+        [](Qt::ApplicationState state) {
+            if (state == Qt::ApplicationActive)
+                WakeLock::acquire();
+        });
 
     auto *model = new FluidModel(&app);
 
