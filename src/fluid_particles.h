@@ -39,6 +39,10 @@ private:
     std::array<std::array<uint8_t, MAX_PER_CELL>, GRID * GRID> m_cellData{};
     std::array<uint8_t, GRID * GRID>                            m_cellCount{};
 
+    // 傾き継続で重力を強化する蓄積値 (1.0 〜 3.0)
+    float     m_gravStrength   = 1.0f;
+    QVector2D m_prevAccelNorm;           // 前フレームの加速度方向
+
     float m_viscosity    = 0.2f;
     float m_velDecay     = 0.97f;
     float m_velMix       = 0.92f;

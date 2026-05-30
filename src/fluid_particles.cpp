@@ -127,7 +127,26 @@ void FluidParticles::applyCohesion() {
 
 // ---- メインステップ -------------------------------------------
 void FluidParticles::step(float dt) {
-    QVector2D scaled = m_accel * 0.3f;
+    // 傾き継続による重力蓄積
+    // 同じ方向に傾け続けるほど力が増し、コーナーに到達しやすくなる
+    float accelLen = m_accel.length();
+    if (accelLen > 0.5f) {
+        QVector2D accelNorm = m_accel / accelLen;
+        float similarity = QVector2D::dotProduct(accelNorm, m_prevAccelNorm);
+        if (similarity > 0.97f) {
+            // 同方向継続: 0.4%/フレームで最大3倍まで増加 (約250フレーム≒4秒)
+            m_gravStrength = std::min(m_gravStrength + 0.004f, 3.0f);
+        } else {
+            // 方向変化: 素早くリセット
+            m_gravStrength = std::max(m_gravStrength - 0.15f, 1.0f);
+        }
+        m_prevAccelNorm = accelNorm;
+    } else {
+        // ほぼ水平: リセット
+        m_gravStrength = std::max(m_gravStrength - 0.05f, 1.0f);
+    }
+
+    QVector2D scaled = m_accel * 0.3f * m_gravStrength;
     std::uniform_real_distribution<float> scatter(-1.0f, 1.0f);
 
     for (auto &p : m_particles) {
