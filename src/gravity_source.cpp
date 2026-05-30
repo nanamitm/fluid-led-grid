@@ -50,6 +50,7 @@ void RealGravitySource::start() {
 #include <QCursor>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QWindow>
 
 MouseGravitySource::MouseGravitySource(QObject *parent)
     : GravitySource(parent)
@@ -58,26 +59,26 @@ MouseGravitySource::MouseGravitySource(QObject *parent)
 
 void MouseGravitySource::start() {
     connect(m_timer, &QTimer::timeout, this, [this]() {
-        auto *screen = QGuiApplication::primaryScreen();
-        if (!screen) return;
+        auto *window = QGuiApplication::focusWindow();
+        if (!window) return;
 
-        QPoint pos  = QCursor::pos();
-        QSize  size = screen->size();
+        QPoint absPos = QCursor::pos();
+        QPoint pos    = absPos - window->position();
+        QSize  size(window->width(), window->height());
 
-        if (m_first) { m_prev = pos; m_first = false; }
+        if (m_first) { m_prev = absPos; m_first = false; }
 
-        // 位置成分: 画面中央を水平、端で ±9.8
+        // 位置成分: ウィンドウ中央を水平、端で ±9.8
         float gx_pos = (pos.x() / float(size.width())  - 0.5f) * 2.0f * 9.8f;
         float gy_pos = (pos.y() / float(size.height()) - 0.5f) * 2.0f * 9.8f;
 
-        // 速度成分: マウスを素早く動かすと追加の衝撃 (実機を振る動作に対応)
-        //   1フレーム(16ms)あたりのピクセル移動量 → ±9.8 にスケール
-        float dx = float(pos.x() - m_prev.x());
-        float dy = float(pos.y() - m_prev.y());
+        // 速度成分: マウスを素早く動かすと追加の衝撃
+        float dx = float(absPos.x() - m_prev.x());
+        float dy = float(absPos.y() - m_prev.y());
         float gx_vel = dx * (9.8f / float(size.width())  * 6.0f);
         float gy_vel = dy * (9.8f / float(size.height()) * 6.0f);
 
-        m_prev = pos;
+        m_prev = absPos;
 
         // 合成: 位置で傾き方向、速度で衝撃の強さを決める
         emit gravityChanged({ gx_pos + gx_vel, gy_pos + gy_vel });
