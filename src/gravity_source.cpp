@@ -59,24 +59,25 @@ MouseGravitySource::MouseGravitySource(QObject *parent)
 
 void MouseGravitySource::start() {
     connect(m_timer, &QTimer::timeout, this, [this]() {
-        auto *window = QGuiApplication::focusWindow();
-        if (!window) return;
+        auto *screen = QGuiApplication::primaryScreen();
+        if (!screen) return;
 
         QPoint absPos = QCursor::pos();
-        QPoint pos    = absPos - window->position();
-        QSize  size(window->width(), window->height());
+        auto  *win    = QGuiApplication::focusWindow();
+        float  halfW  = win && win->isVisible() ? win->width()  * 0.5f : screen->size().width()  * 0.5f;
+        float  halfH  = win && win->isVisible() ? win->height() * 0.5f : screen->size().height() * 0.5f;
+        float  centX  = win && win->isVisible() ? win->x() + halfW : screen->size().width()  * 0.5f;
+        float  centY  = win && win->isVisible() ? win->y() + halfH : screen->size().height() * 0.5f;
 
         if (m_first) { m_prev = absPos; m_first = false; }
 
-        // 位置成分: ウィンドウ中央を水平、端で ±9.8
-        float gx_pos = (pos.x() / float(size.width())  - 0.5f) * 2.0f * 9.8f;
-        float gy_pos = (pos.y() / float(size.height()) - 0.5f) * 2.0f * 9.8f;
+        float gx_pos = (absPos.x() - centX) / halfW * 9.8f;
+        float gy_pos = (absPos.y() - centY) / halfH * 9.8f;
 
-        // 速度成分: マウスを素早く動かすと追加の衝撃
         float dx = float(absPos.x() - m_prev.x());
         float dy = float(absPos.y() - m_prev.y());
-        float gx_vel = dx * (9.8f / float(size.width())  * 6.0f);
-        float gy_vel = dy * (9.8f / float(size.height()) * 6.0f);
+        float gx_vel = dx / halfW * 9.8f * 3.0f;
+        float gy_vel = dy / halfH * 9.8f * 3.0f;
 
         m_prev = absPos;
 
