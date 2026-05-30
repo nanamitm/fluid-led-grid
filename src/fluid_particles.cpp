@@ -134,8 +134,8 @@ void FluidParticles::step(float dt) {
         QVector2D accelNorm = m_accel / accelLen;
         float similarity = QVector2D::dotProduct(accelNorm, m_prevAccelNorm);
         if (similarity > 0.97f) {
-            // 同方向継続: 0.5%/フレームで最大6倍まで増加 (約200フレーム≒3秒)
-            m_gravStrength = std::min(m_gravStrength + 0.005f, 6.0f);
+            // 同方向継続: 0.4%/フレームで最大4倍まで増加 (約250フレーム≒4秒)
+            m_gravStrength = std::min(m_gravStrength + 0.004f, 4.0f);
         } else {
             // 方向変化: 素早くリセット
             m_gravStrength = std::max(m_gravStrength - 0.15f, 1.0f);
@@ -189,7 +189,51 @@ void FluidParticles::step(float dt) {
     buildSpatialGrid();
     applyParticleCollisions();
     if (m_cohesion > 0.001f) applyCohesion();
+    applySettling();
     rebuildBrightness();
+}
+
+// ---- セルベース流動化 ----------------------------------------
+// 重力方向の隣接セルが空なら速度ブーストを与える
+// → 粒子が詰まりを回り込んで最低位置 (コーナー) に自然に集まる
+void FluidParticles::applySettling() {
+    if (m_accel.lengthSquared() < 0.1f) return;
+
+    QVector2D gNorm = m_accel.normalized();
+    static constexpr float BOOST = 0.25f;
+
+    for (auto &p : m_particles) {
+        // 重力方向 1.5 セル先のターゲットセル
+        int tcx = std::clamp(int(p.pos.x() + gNorm.x() * 1.5f + 0.5f), 0, GRID - 1);
+        int tcy = std::clamp(int(p.pos.y() + gNorm.y() * 1.5f + 0.5f), 0, GRID - 1);
+        int ci  = tcy * GRID + tcx;
+
+        // 自分が今いるセル
+        int cx = std::clamp(int(p.pos.x() + 0.5f), 0, GRID - 1);
+        int cy = std::clamp(int(p.pos.y() + 0.5f), 0, GRID - 1);
+
+        if (tcx == cx && tcy == cy) continue; // 移動先なし
+
+        if (m_cellCount[ci] == 0) {
+            // 空きセルあり → 重力方向に速度ブースト
+            p.vel += gNorm * BOOST;
+        } else {
+            // 直前が埋まっている場合、重力に垂直な方向(左右)への小さな揺らぎを加えて
+            // 粒子が詰まりを迂回できるようにする
+            QVector2D perp{-gNorm.y(), gNorm.x()};
+            // 左右のどちらかに空きがあればそちらへ誘導
+            auto tryPerp = [&](QVector2D dir) {
+                int px = std::clamp(int(p.pos.x() + dir.x() + 0.5f), 0, GRID - 1);
+                int py = std::clamp(int(p.pos.y() + dir.y() + 0.5f), 0, GRID - 1);
+                if (m_cellCount[py * GRID + px] == 0) {
+                    p.vel += dir * (BOOST * 0.5f);
+                    return true;
+                }
+                return false;
+            };
+            if (!tryPerp(perp)) tryPerp(-perp);
+        }
+    }
 }
 
 void FluidParticles::rebuildBrightness() {

@@ -27,6 +27,7 @@ private:
     void buildSpatialGrid();
     void applyParticleCollisions();
     void applyCohesion();
+    void applySettling();   // 重力方向の空セルへの流動ブースト
     void rebuildBrightness();
 
     std::array<Particle, COUNT> m_particles;

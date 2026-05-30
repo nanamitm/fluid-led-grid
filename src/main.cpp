@@ -38,8 +38,10 @@ int main(int argc, char *argv[]) {
         Qt::QueuedConnection);
     engine.load(url);
 
-    // engine.load() 後に Activity Window が確実に存在するタイミングで設定
-    QTimer::singleShot(500, []() { WakeLock::acquire(); });
+#ifndef Q_OS_ANDROID
+    // Android 以外: OS のスリープ抑止 (Android は Java Activity で処理)
+    WakeLock::acquire();
+#endif
 
     return app.exec();
 }
