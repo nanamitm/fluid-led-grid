@@ -82,8 +82,17 @@ jobs:
 
       - name: Configure and Build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
-          cmake --build build
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" > cmake_configure.log 2>&1 || (cat cmake_configure.log && exit 1)
+          cmake --build build > cmake_build.log 2>&1 || (cat cmake_build.log && exit 1)
+
+      - name: Upload Build Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-build-logs
+          path: |
+            cmake_configure.log
+            cmake_build.log
 
       - name: Download linuxdeploy & Qt Plugin
         run: |
