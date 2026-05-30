@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir deploy
           copy build\Release\fluid-led-grid.exe deploy\
-          windeployqt --qmldir qml deploy\fluid-led-grid.exe
+          windeployqt --qmldir qml --no-compiler-runtime deploy\fluid-led-grid.exe
 
       - name: Archive Release
         shell: pwsh
