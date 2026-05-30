@@ -28,7 +28,7 @@ jobs:
 
       - name: Configure and Build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
           cmake --build build --config Release
 
       - name: Deploy Dependencies (windeployqt)
@@ -82,7 +82,7 @@ jobs:
 
       - name: Configure and Build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.QT_ROOT_DIR }}"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
           cmake --build build
 
       - name: Download linuxdeploy & Qt Plugin
@@ -96,12 +96,14 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
           QML_SOURCES_PATHS: qml
           VERSION: ${{ github.ref_name }}
-          QMAKE: ${{ env.QT_ROOT_DIR }}/bin/qmake
         run: |
           # Fallback version for manual execution or branches
           if [ "${{ github.ref_type }}" != "tag" ]; then
             export VERSION="latest"
           fi
+          
+          # Set QMAKE path dynamically
+          export QMAKE=$QT_ROOT_DIR/bin/qmake
           
           # Run linuxdeploy with Qt plugin
           ./linuxdeploy-x86_64.AppImage \
