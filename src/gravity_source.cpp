@@ -3,20 +3,48 @@
 #ifdef Q_OS_ANDROID
 
 #include <QAccelerometerReading>
+#include <QGuiApplication>
 
 RealGravitySource::RealGravitySource(QObject *parent)
     : GravitySource(parent)
     , m_sensor(new QAccelerometer(this))
 {}
 
+// 画面の回転に応じてセンサー軸を画面座標系に変換する
+//   Android センサー: X=右, Y=上(画面Y反転), Z=手前
+//   画面座標:         X=右, Y=下
+//   → 基本は Y を反転、さらに画面回転に合わせて X/Y を入れ替え
+QVector2D RealGravitySource::mapAxes(float sx, float sy) const {
+    if (!m_screen) return {sx, -sy};
+
+    switch (m_screen->orientation()) {
+    case Qt::LandscapeOrientation:         // 90° 時計回り
+        return { sy,  sx};
+    case Qt::InvertedPortraitOrientation:  // 180°
+        return {-sx,  sy};
+    case Qt::InvertedLandscapeOrientation: // 270°
+        return {-sy, -sx};
+    default:                               // Portrait (0°, 通常)
+        return { sx, -sy};
+    }
+}
+
 void RealGravitySource::start() {
+    m_screen = QGuiApplication::primaryScreen();
+
+    // 画面回転を追跡
+    if (m_screen) {
+        m_screen->setOrientationUpdateMask(
+            Qt::PortraitOrientation | Qt::InvertedPortraitOrientation |
+            Qt::LandscapeOrientation | Qt::InvertedLandscapeOrientation);
+    }
+
     m_sensor->setDataRate(60);
     connect(m_sensor, &QAccelerometer::readingChanged, this, [this]() {
         auto *r = m_sensor->reading();
-        // ローパスフィルタ (α=0.8) でノイズ軽減
         const float alpha = 0.8f;
-        m_filtered = m_filtered * alpha
-                   + QVector2D((float)r->x(), (float)r->y()) * (1.0f - alpha);
+        QVector2D mapped = mapAxes((float)r->x(), (float)r->y());
+        m_filtered = m_filtered * alpha + mapped * (1.0f - alpha);
         emit gravityChanged(m_filtered);
     });
     m_sensor->start();

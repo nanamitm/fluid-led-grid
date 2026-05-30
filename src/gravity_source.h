@@ -16,6 +16,7 @@ signals:
 // ---- Android: 実加速度センサー ----
 #ifdef Q_OS_ANDROID
 #include <QAccelerometer>
+#include <QScreen>
 
 class RealGravitySource : public GravitySource {
     Q_OBJECT
@@ -23,8 +24,11 @@ public:
     explicit RealGravitySource(QObject *parent = nullptr);
     void start() override;
 private:
+    QVector2D mapAxes(float sx, float sy) const;
+
     QAccelerometer *m_sensor = nullptr;
-    QVector2D m_filtered;
+    QScreen        *m_screen = nullptr;
+    QVector2D       m_filtered;
 };
 
 #else
