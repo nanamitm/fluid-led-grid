@@ -10,7 +10,8 @@ FluidModel::FluidModel(QObject *parent)
     m_colorHue    = qBound(0,    s.value("colorHue",    200).toInt(),    359);
 }
 
-float FluidModel::brightness(int x, int y) const { return m_sim.brightness(x, y); }
+// スナップショットから読む (レンダースレッドから安全に呼べる)
+float FluidModel::brightness(int x, int y) const { return m_brightSnap[y][x]; }
 
 void FluidModel::setViscosity(float v) {
     if (qFuzzyCompare(v, m_sim.viscosity())) return;
@@ -38,7 +39,15 @@ void FluidModel::setColorHue(int hue) {
 
 void FluidModel::reset() { m_sim.reset(); }
 
-void FluidModel::tick() { m_sim.step(0.016f); emit updated(); }
+void FluidModel::tick() {
+    m_sim.step(0.016f);
+    // emit 前にスナップショットを更新 → レンダースレッドは安定したデータを読む
+    const int N = FluidParticles::GRID;
+    for (int y = 0; y < N; ++y)
+        for (int x = 0; x < N; ++x)
+            m_brightSnap[y][x] = m_sim.brightness(x, y);
+    emit updated();
+}
 
 void FluidModel::onGravityChanged(QVector2D g) {
     m_rawGravity = g;

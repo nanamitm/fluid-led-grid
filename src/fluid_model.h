@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QVector2D>
+#include <array>
 #include "fluid_particles.h"
 
 class FluidModel : public QObject {
@@ -38,6 +39,9 @@ public slots:
 private:
     FluidParticles m_sim;
     float          m_sensitivity = 1.0f;
-    int            m_colorHue    = 200;   // 0-359: デフォルト水色
+    int            m_colorHue    = 200;
     QVector2D      m_rawGravity;
+
+    // レンダースレッドに渡す輝度スナップショット (tick後に更新)
+    std::array<std::array<float, FluidParticles::GRID>, FluidParticles::GRID> m_brightSnap{};
 };

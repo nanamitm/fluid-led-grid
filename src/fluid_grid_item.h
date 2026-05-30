@@ -1,9 +1,9 @@
 #pragma once
-#include <QQuickPaintedItem>
+#include <QQuickItem>
 #include "fluid_model.h"
 
-// LED グリッドを直接描画する QQuick アイテム
-class FluidGridItem : public QQuickPaintedItem {
+// QSGGeometryNode ベースの GPU 描画 (QPainter より大幅に高速)
+class FluidGridItem : public QQuickItem {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(FluidModel* model READ model WRITE setModel NOTIFY modelChanged)
@@ -14,10 +14,11 @@ public:
     FluidModel *model() const { return m_model; }
     void setModel(FluidModel *m);
 
-    void paint(QPainter *painter) override;
-
 signals:
     void modelChanged();
+
+protected:
+    QSGNode *updatePaintNode(QSGNode *old, UpdatePaintNodeData *) override;
 
 private:
     FluidModel *m_model = nullptr;
