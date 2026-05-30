@@ -37,6 +37,7 @@ public slots:
     void onGravityChanged(QVector2D g);
 
 private:
+    void applyGravityToSim();
     FluidParticles m_sim;
     float          m_sensitivity = 1.0f;
     int            m_colorHue    = 200;
