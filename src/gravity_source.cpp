@@ -31,14 +31,6 @@ QVector2D RealGravitySource::mapAxes(float sx, float sy) const {
 
 void RealGravitySource::start() {
     m_screen = QGuiApplication::primaryScreen();
-
-    // 画面回転を追跡
-    if (m_screen) {
-        m_screen->setOrientationUpdateMask(
-            Qt::PortraitOrientation | Qt::InvertedPortraitOrientation |
-            Qt::LandscapeOrientation | Qt::InvertedLandscapeOrientation);
-    }
-
     m_sensor->setDataRate(60);
     connect(m_sensor, &QAccelerometer::readingChanged, this, [this]() {
         auto *r = m_sensor->reading();
