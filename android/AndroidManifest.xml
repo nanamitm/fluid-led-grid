@@ -28,7 +28,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <meta-data android:name="android.app.lib_name" android:value="FluidLedGrid"/>
+            <meta-data android:name="android.app.lib_name" android:value="fluid-led-grid"/>
         </activity>
     </application>
 </manifest>
