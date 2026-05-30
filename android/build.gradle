@@ -78,7 +78,9 @@ android {
 
     packagingOptions {
         jniLibs {
-            useLegacyPackaging = legacyPackaging
+            // legacyPackaging は Qt 6.9+ の gradle.properties で生成される
+            // 古いバージョンでは true にフォールバック
+            useLegacyPackaging = project.hasProperty('legacyPackaging') ? legacyPackaging.toBoolean() : true
         }
     }
 
