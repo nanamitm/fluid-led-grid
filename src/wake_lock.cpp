@@ -7,21 +7,27 @@
 static constexpr jint FLAG_KEEP_SCREEN_ON = 0x00000080;
 
 void WakeLock::acquire() {
-    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([] {
-        QJniObject activity{QNativeInterface::QAndroidApplication::context()};
-        QJniObject window = activity.callObjectMethod(
-            "getWindow", "()Landroid/view/Window;");
-        window.callMethod<void>("addFlags", "(I)V", FLAG_KEEP_SCREEN_ON);
-    });
+    // Qt6 Android: main Qt thread = Android main thread → 直接 JNI 呼び出し可能
+    // context() は Activity を返す (Application ではない)
+    QJniObject activity{QNativeInterface::QAndroidApplication::context()};
+    if (!activity.isValid()) return;
+
+    QJniObject window = activity.callObjectMethod(
+        "getWindow", "()Landroid/view/Window;");
+    if (!window.isValid()) return;
+
+    window.callMethod<void>("addFlags", "(I)V", FLAG_KEEP_SCREEN_ON);
 }
 
 void WakeLock::release() {
-    QNativeInterface::QAndroidApplication::runOnAndroidMainThread([] {
-        QJniObject activity{QNativeInterface::QAndroidApplication::context()};
-        QJniObject window = activity.callObjectMethod(
-            "getWindow", "()Landroid/view/Window;");
-        window.callMethod<void>("clearFlags", "(I)V", FLAG_KEEP_SCREEN_ON);
-    });
+    QJniObject activity{QNativeInterface::QAndroidApplication::context()};
+    if (!activity.isValid()) return;
+
+    QJniObject window = activity.callObjectMethod(
+        "getWindow", "()Landroid/view/Window;");
+    if (!window.isValid()) return;
+
+    window.callMethod<void>("clearFlags", "(I)V", FLAG_KEEP_SCREEN_ON);
 }
 
 #elif defined(Q_OS_WIN)

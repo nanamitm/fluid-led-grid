@@ -134,8 +134,8 @@ void FluidParticles::step(float dt) {
         QVector2D accelNorm = m_accel / accelLen;
         float similarity = QVector2D::dotProduct(accelNorm, m_prevAccelNorm);
         if (similarity > 0.97f) {
-            // 同方向継続: 0.4%/フレームで最大3倍まで増加 (約250フレーム≒4秒)
-            m_gravStrength = std::min(m_gravStrength + 0.004f, 3.0f);
+            // 同方向継続: 0.5%/フレームで最大6倍まで増加 (約200フレーム≒3秒)
+            m_gravStrength = std::min(m_gravStrength + 0.005f, 6.0f);
         } else {
             // 方向変化: 素早くリセット
             m_gravStrength = std::max(m_gravStrength - 0.15f, 1.0f);

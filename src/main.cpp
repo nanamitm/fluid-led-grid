@@ -9,13 +9,6 @@
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
-    // スリープ抑止: ウィンドウが生成されてから実行する必要があるため
-    // applicationStateChanged で Active になったタイミングで適用
-    QObject::connect(&app, &QGuiApplication::applicationStateChanged,
-        [](Qt::ApplicationState state) {
-            if (state == Qt::ApplicationActive)
-                WakeLock::acquire();
-        });
 
     auto *model = new FluidModel(&app);
 
@@ -44,6 +37,9 @@ int main(int argc, char *argv[]) {
         &app, []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.load(url);
+
+    // engine.load() 後に Activity Window が確実に存在するタイミングで設定
+    QTimer::singleShot(500, []() { WakeLock::acquire(); });
 
     return app.exec();
 }
