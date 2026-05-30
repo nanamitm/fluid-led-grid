@@ -143,7 +143,7 @@ jobs:
 
       - name: Install Android NDK 27
         run: |
-          sdkmanager "ndk;27.2.12479018" --sdk_root=$ANDROID_SDK_ROOT
+          echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;27.2.12479018"
           echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
 
       - name: Install Qt (Android arm64 + desktop host)
