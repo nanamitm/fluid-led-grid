@@ -4,9 +4,12 @@
 #include <QTimer>
 #include "fluid_model.h"
 #include "gravity_source.h"
+#include "wake_lock.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
+
+    WakeLock::acquire();
 
     auto *model = new FluidModel(&app);
 

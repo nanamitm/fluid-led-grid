@@ -11,7 +11,7 @@ struct Particle {
 class FluidParticles {
 public:
     static constexpr int GRID  = 20;
-    static constexpr int COUNT = 120;  // 30% of 400
+    static constexpr int COUNT = 120;
 
     FluidParticles();
 
@@ -19,11 +19,12 @@ public:
     void setViscosity(float v);
     float viscosity() const { return m_viscosity; }
 
-    void reset();   // 粒子を下部に再配置
+    void reset();
     void step(float dt);
     float brightness(int x, int y) const;
 
 private:
+    void buildSpatialGrid();
     void applyParticleCollisions();
     void applyCohesion();
     void rebuildBrightness();
@@ -33,15 +34,18 @@ private:
     std::array<std::array<float, GRID>, GRID> m_bright{};
     std::mt19937 m_rng{42};
 
-    float m_viscosity   = 0.2f;
+    // 空間グリッド: O(N²) → O(N) 近傍探索
+    static constexpr int MAX_PER_CELL = 20;
+    std::array<std::array<uint8_t, MAX_PER_CELL>, GRID * GRID> m_cellData{};
+    std::array<uint8_t, GRID * GRID>                            m_cellCount{};
 
-    // setViscosity() で導出
-    float m_velDecay    = 0.97f;
-    float m_velMix      = 0.92f;
-    float m_wallBounce  = 0.90f;  // 壁の弾性: 高=よく跳ねる
-    float m_wallScatter = 0.40f;  // 壁衝突時の横方向飛び散り強度
-    float m_elasticity  = 0.80f;  // 粒子衝突の弾性: 1=完全弾性, 0=完全非弾性
-    float m_cohesion    = 0.00f;  // 近傍粒子への引力
+    float m_viscosity    = 0.2f;
+    float m_velDecay     = 0.97f;
+    float m_velMix       = 0.92f;
+    float m_wallBounce   = 0.90f;
+    float m_wallScatter  = 0.40f;
+    float m_elasticity   = 0.80f;
+    float m_cohesion     = 0.00f;
 
     static constexpr float GRAVITY     = 0.08f;
     static constexpr float MAX_VEL     = 2.9f;

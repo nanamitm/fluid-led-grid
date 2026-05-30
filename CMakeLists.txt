@@ -14,6 +14,7 @@ qt_add_executable(FluidLedGrid
     src/fluid_model.cpp
     src/gravity_source.cpp
     src/fluid_grid_item.cpp
+    src/wake_lock.cpp
     $<$<PLATFORM_ID:Windows>:resources/app.rc>
 )
 
