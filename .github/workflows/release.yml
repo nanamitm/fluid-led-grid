@@ -112,7 +112,6 @@ jobs:
             --plugin qt \
             --output appimage
 
-          # ツール本体を削除（リリースファイルに混入しないよう）
           rm -f linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Upload Artifact
@@ -130,8 +129,89 @@ jobs:
             cmake_configure.log
             cmake_build.log
 
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Android NDK 27
+        run: |
+          sdkmanager "ndk;27.2.12479018" --sdk_root=$ANDROID_SDK_ROOT
+          echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> $GITHUB_ENV
+
+      - name: Install Qt (Android arm64 + desktop host)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          host: 'linux'
+          target: 'android'
+          arch: 'android_arm64_v8a'
+          modules: 'qtsensors'
+          extra: '--autodesktop'
+          cache: true
+
+      - name: Configure
+        run: |
+          cmake -B build-android \
+            -G Ninja \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_NDK=$ANDROID_NDK_ROOT \
+            -DANDROID_PLATFORM=android-28 \
+            -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
+            -DANDROID_STL=c++_shared \
+            -DANDROID_USE_LEGACY_TOOLCHAIN_FILE=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake \
+            -DCMAKE_PREFIX_PATH=$QT_ROOT_DIR \
+            -DCMAKE_FIND_ROOT_PATH=$QT_ROOT_DIR \
+            -DQT_HOST_PATH=$QT_HOST_PATH \
+            -DQT_NO_GLOBAL_APK_TARGET_PART_OF_ALL=ON \
+            -DQT_USE_TARGET_ANDROID_BUILD_DIR=ON
+
+      - name: Build
+        run: |
+          cmake --build build-android
+          cmake --build build-android --target apk
+
+      - name: Sign APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          [ "${{ github.ref_type }}" != "tag" ] && VERSION="latest"
+
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.jks
+
+          UNSIGNED=$(find build-android -name "*-release-unsigned.apk" | head -1)
+          APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner | sort -V | tail -1)
+
+          $APKSIGNER sign \
+            --ks release.jks \
+            --ks-key-alias "$ANDROID_KEYSTORE_ALIAS" \
+            --ks-pass "pass:$ANDROID_KEYSTORE_PASS" \
+            --key-pass "pass:$ANDROID_KEYSTORE_PASS" \
+            --out "FluidLedGrid-Android-${VERSION}.apk" \
+            "$UNSIGNED"
+
+          rm -f release.jks
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: FluidLedGrid-Android-*.apk
+
   release:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux, build-android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -145,12 +225,18 @@ jobs:
         with:
           name: linux-build
 
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-build
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             FluidLedGrid-Windows-*.zip
             Fluid_LED_Grid-*.AppImage
+            FluidLedGrid-Android-*.apk
           draft: false
           prerelease: false
         env:
