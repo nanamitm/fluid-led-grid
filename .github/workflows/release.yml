@@ -41,7 +41,6 @@ jobs:
       - name: Archive Release
         shell: pwsh
         run: |
-          # Use the tag name or fallback to a default
           $version = "${{ github.ref_name }}"
           if ($version -eq "main" -or $version -eq "") { $version = "latest" }
           Compress-Archive -Path deploy\* -DestinationPath "FluidLedGrid-Windows-${version}.zip"
@@ -82,42 +81,29 @@ jobs:
 
       - name: Configure and Build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" > cmake_configure.log 2>&1 || (cat cmake_configure.log && exit 1)
-          cmake --build build > cmake_build.log 2>&1 || (cat cmake_build.log && exit 1)
-
-      - name: Upload Build Logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: linux-build-logs
-          path: |
-            cmake_configure.log
-            cmake_build.log
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          cmake --build build
 
       - name: Download linuxdeploy & Qt Plugin
         run: |
-          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
       - name: Build AppImage
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
-          QML_SOURCES_PATHS: qml
-          VERSION: ${{ github.ref_name }}
+          QML_SOURCES_PATHS: ${{ github.workspace }}/qml
         run: |
-          # Fallback version for manual execution or branches
+          VERSION="${{ github.ref_name }}"
           if [ "${{ github.ref_type }}" != "tag" ]; then
-            export VERSION="latest"
+            VERSION="latest"
           fi
-          
-          # Set QMAKE path dynamically
+          export VERSION
           export QMAKE=$QT_ROOT_DIR/bin/qmake
-          
-          # Copy icon file so its name matches the "Icon=fluid-led-grid" entry in the desktop file
+
           cp resources/app_256.png resources/fluid-led-grid.png
-          
-          # Run linuxdeploy with Qt plugin
+
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
             --executable build/fluid-led-grid \
@@ -126,11 +112,23 @@ jobs:
             --plugin qt \
             --output appimage
 
+          # ツール本体を削除（リリースファイルに混入しないよう）
+          rm -f linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: "Fluid_LED_Grid-*.AppImage"
+          path: Fluid_LED_Grid-*.AppImage
+
+      - name: Upload Build Logs (failure only)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: linux-build-logs
+          path: |
+            cmake_configure.log
+            cmake_build.log
 
   release:
     needs: [build-windows, build-linux]

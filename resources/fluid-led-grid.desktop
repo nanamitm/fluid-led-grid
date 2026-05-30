@@ -1,8 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Fluid LED Grid
-Comment=Tilt-based 20x20 LED fluid simulation
+Comment=Tilt-responsive fluid LED grid simulation
 Exec=fluid-led-grid
 Icon=fluid-led-grid
-Categories=Utility;Simulation;
-Terminal=false
+Categories=Utility;
