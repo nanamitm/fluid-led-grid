@@ -57,11 +57,11 @@ void FluidModel::onGravityChanged(QVector2D g) {
 
 void FluidModel::applyGravityToSim() {
     // 表示グリッドは +45° 回転描画されているため、
-    // 重力ベクトルを -45° 回転してシミュレーション座標系に合わせる
-    // 回転 -45°: x' = (gx - gy) / √2,  y' = (gx + gy) / √2
+    // 重力ベクトルを +45° 回転してシミュレーション座標系に合わせる
+    // 回転 +45°: x' = (gx + gy) / √2,  y' = (-gx + gy) / √2
     static const float S = 1.0f / float(M_SQRT2);
     QVector2D rotated(
-        (m_rawGravity.x() - m_rawGravity.y()) * S,
-        (m_rawGravity.x() + m_rawGravity.y()) * S);
+        ( m_rawGravity.x() + m_rawGravity.y()) * S,
+        (-m_rawGravity.x() + m_rawGravity.y()) * S);
     m_sim.setAcceleration(rotated * m_sensitivity);
 }
