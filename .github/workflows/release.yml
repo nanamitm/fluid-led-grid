@@ -114,12 +114,15 @@ jobs:
           # Set QMAKE path dynamically
           export QMAKE=$QT_ROOT_DIR/bin/qmake
           
+          # Copy icon file so its name matches the "Icon=fluid-led-grid" entry in the desktop file
+          cp resources/app_256.png resources/fluid-led-grid.png
+          
           # Run linuxdeploy with Qt plugin
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
             --executable build/fluid-led-grid \
             --desktop-file resources/fluid-led-grid.desktop \
-            --icon-file resources/app_256.png \
+            --icon-file resources/fluid-led-grid.png \
             --plugin qt \
             --output appimage
 
