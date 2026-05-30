@@ -130,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: "*.AppImage"
+          path: "Fluid_LED_Grid-*.AppImage"
 
   release:
     needs: [build-windows, build-linux]
@@ -152,7 +152,7 @@ jobs:
         with:
           files: |
             FluidLedGrid-Windows-*.zip
-            *.AppImage
+            Fluid_LED_Grid-*.AppImage
           draft: false
           prerelease: false
         env:
