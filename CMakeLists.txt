@@ -44,6 +44,7 @@ target_link_libraries(FluidLedGrid PRIVATE
 set_target_properties(FluidLedGrid PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
+    OUTPUT_NAME "fluid-led-grid"
 )
 
 if(ANDROID)

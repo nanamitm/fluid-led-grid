@@ -35,8 +35,8 @@ jobs:
         shell: pwsh
         run: |
           mkdir deploy
-          copy build\Release\FluidLedGrid.exe deploy\
-          windeployqt --qmldir qml deploy\FluidLedGrid.exe
+          copy build\Release\fluid-led-grid.exe deploy\
+          windeployqt --qmldir qml deploy\fluid-led-grid.exe
 
       - name: Archive Release
         shell: pwsh
@@ -117,7 +117,7 @@ jobs:
           # Run linuxdeploy with Qt plugin
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
-            --executable build/FluidLedGrid \
+            --executable build/fluid-led-grid \
             --desktop-file resources/fluid-led-grid.desktop \
             --icon-file resources/app_256.png \
             --plugin qt \
