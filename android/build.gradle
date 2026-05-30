@@ -1,0 +1,111 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        //noinspection AndroidGradlePluginVersion
+        classpath 'com.android.tools.build:gradle:9.0.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0"
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+apply plugin: qtGradlePluginType
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    //noinspection GradleDependency
+    implementation 'androidx.core:core:1.17.0'
+}
+
+// 署名プロパティ: 環境変数 → android-signing.properties ファイルの順に参照
+def signingPropertiesPath = System.getenv("ANDROID_SIGNING_PROPERTIES")
+def signingPropertiesFile = signingPropertiesPath
+    ? file(signingPropertiesPath)
+    : file("../../android-signing.properties")
+
+def signingProps = new Properties()
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withInputStream { signingProps.load(it) }
+}
+
+def signingValue = { key ->
+    return System.getenv("ANDROID_${key}") ?: signingProps.getProperty(key) ?: ""
+}
+
+android {
+    namespace = androidPackageName
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion androidBuildToolsVersion
+    ndkVersion = androidNdkVersion
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs     = [qtAndroidDir + '/src', 'src', 'java']
+            kotlin.srcDirs   = [qtAndroidDir + '/src', 'src', 'kotlin']
+            aidl.srcDirs     = [qtAndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs      = [qtAndroidDir + '/res', 'res']
+            resources.srcDirs = ['resources']
+            renderscript.srcDirs = ['src']
+            assets.srcDirs   = ['assets']
+            jniLibs.srcDirs  = ['libs']
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.incremental = true
+        options.compilerArgs += ['-Xlint:all']
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lintOptions {
+        abortOnError = false
+    }
+
+    aaptOptions {
+        noCompress 'rcc'
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = legacyPackaging
+        }
+    }
+
+    defaultConfig {
+        resConfig "en"
+        minSdkVersion     qtMinSdkVersion
+        targetSdkVersion  qtTargetSdkVersion
+        ndk.abiFilters    = qtTargetAbiList.split(",")
+    }
+
+    def sf = signingValue("storeFile")
+
+    signingConfigs {
+        release {
+            storeFile     sf ? file(sf) : null
+            storePassword signingValue("storePassword")
+            keyAlias      signingValue("keyAlias")
+            keyPassword   signingValue("keyPassword")
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (sf) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}

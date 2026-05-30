@@ -1,0 +1,21 @@
+# Build directories
+build/
+build-*/
+
+# Qt Creator
+.qtcreator/
+*.user
+CMakeLists.txt.user*
+
+# Android signing (sensitive)
+android-signing.properties
+*.keystore
+*.jks
+
+# Local build scripts (contain absolute paths)
+*.bat
+
+# Logs and temp files
+*.log
+err.txt
+out.txt
