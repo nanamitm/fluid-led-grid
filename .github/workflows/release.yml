@@ -1,0 +1,144 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          modules: 'qtsensors'
+          cache: true
+
+      - name: Configure and Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release
+
+      - name: Deploy Dependencies (windeployqt)
+        shell: pwsh
+        run: |
+          mkdir deploy
+          copy build\Release\FluidLedGrid.exe deploy\
+          windeployqt --qmldir qml deploy\FluidLedGrid.exe
+
+      - name: Archive Release
+        shell: pwsh
+        run: |
+          # Use the tag name or fallback to a default
+          $version = "${{ github.ref_name }}"
+          if ($version -eq "main" -or $version -eq "") { $version = "latest" }
+          Compress-Archive -Path deploy\* -DestinationPath "FluidLedGrid-Windows-${version}.zip"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: FluidLedGrid-Windows-*.zip
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libxcb-image0-dev \
+            libxcb-keysyms1-dev \
+            libxcb-render-util0-dev \
+            libxcb-xinerama0-dev \
+            libxcb-icccm4-dev \
+            libegl1-mesa-dev
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          modules: 'qtsensors'
+          install-deps: 'true'
+          cache: true
+
+      - name: Configure and Build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Download linuxdeploy & Qt Plugin
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          QML_SOURCES_PATHS: qml
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # Fallback version for manual execution or branches
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            export VERSION="latest"
+          fi
+          
+          # Run linuxdeploy with Qt plugin
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --executable build/FluidLedGrid \
+            --desktop-file resources/fluid-led-grid.desktop \
+            --icon-file resources/app_256.png \
+            --plugin qt \
+            --output appimage
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: FluidLedGrid-*.AppImage
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            FluidLedGrid-Windows-*.zip
+            FluidLedGrid-*.AppImage
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
