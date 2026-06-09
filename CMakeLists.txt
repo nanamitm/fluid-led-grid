@@ -25,6 +25,7 @@ qt_add_qml_module(FluidLedGrid
         qml/Main.qml
         qml/FluidGrid.qml
         qml/SettingSlider.qml
+        qml/IconGlyph.qml
     SOURCES
         src/fluid_grid_item.h
         src/fluid_grid_item.cpp

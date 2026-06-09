@@ -29,7 +29,13 @@ Window {
             anchors { right: parent.right; verticalCenter: parent.verticalCenter; rightMargin: 8 }
             width: 36; height: 36; radius: 18
             color: gearMouse.pressed ? "#223" : "transparent"
-            Text { anchors.centerIn: parent; text: "⚙"; color: "#88aacc"; font.pixelSize: 22 }
+            IconGlyph {
+                anchors.centerIn: parent
+                width: 24; height: 24
+                icon: "gear"
+                strokeColor: "#88aacc"
+                lineWidth: 2
+            }
             MouseArea {
                 id: gearMouse; anchors.fill: parent
                 onClicked: settingsPanel.open = !settingsPanel.open
@@ -69,7 +75,13 @@ Window {
                     Rectangle {
                         width: 28; height: 28; radius: 14
                         color: closeMouse.pressed ? "#334" : "transparent"
-                        Text { anchors.centerIn: parent; text: "✕"; color: "#88aacc"; font.pixelSize: 16 }
+                        IconGlyph {
+                            anchors.centerIn: parent
+                            width: 18; height: 18
+                            icon: "close"
+                            strokeColor: "#88aacc"
+                            lineWidth: 2
+                        }
                         MouseArea { id: closeMouse; anchors.fill: parent
                                     onClicked: settingsPanel.open = false }
                     }
@@ -113,11 +125,11 @@ Window {
 
                         Repeater {
                             model: ListModel {
-                                ListElement { clabel: "水"; chue: 200; cval: "#0088ff" }
-                                ListElement { clabel: "緑"; chue: 120; cval: "#00cc44" }
-                                ListElement { clabel: "赤"; chue:   0; cval: "#ff3322" }
-                                ListElement { clabel: "紫"; chue: 270; cval: "#aa44ff" }
-                                ListElement { clabel: "橙"; chue:  30; cval: "#ff8800" }
+                                ListElement { chue: 200; cval: "#0088ff" }
+                                ListElement { chue: 120; cval: "#00cc44" }
+                                ListElement { chue:   0; cval: "#ff3322" }
+                                ListElement { chue: 270; cval: "#aa44ff" }
+                                ListElement { chue:  30; cval: "#ff8800" }
                             }
                             delegate: Rectangle {
                                 width: 42; height: 42; radius: 8
@@ -125,8 +137,14 @@ Window {
                                 opacity: FluidSim.colorHue === chue ? 1.0 : 0.4
                                 border.color: FluidSim.colorHue === chue ? "#fff" : "transparent"
                                 border.width: 2
-                                Text { anchors.centerIn: parent; text: clabel
-                                       color: "white"; font.pixelSize: 12 }
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 14; height: 14; radius: 7
+                                    color: "transparent"
+                                    border.color: "#ffffff"
+                                    border.width: FluidSim.colorHue === chue ? 2 : 0
+                                    opacity: 0.9
+                                }
                                 MouseArea { anchors.fill: parent
                                             onClicked: FluidSim.colorHue = chue }
                             }
@@ -193,8 +211,13 @@ Window {
                         width: parent.width; height: 40; radius: 8
                         color: resetMouse.pressed ? "#1a3a5a" : "#162030"
                         border.color: "#2a4a6a"; border.width: 1
-                        Text { anchors.centerIn: parent; text: "↺  リセット"
-                               color: "#88bbff"; font.pixelSize: 14 }
+                        IconGlyph {
+                            anchors.centerIn: parent
+                            width: 26; height: 26
+                            icon: "reset"
+                            strokeColor: "#88bbff"
+                            lineWidth: 2.4
+                        }
                         MouseArea {
                             id: resetMouse; anchors.fill: parent
                             onClicked: { FluidSim.reset(); settingsPanel.open = false }
